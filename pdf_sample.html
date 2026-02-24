@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <title>Eszköz átadás-átvételi jegyzőkönyv</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 30px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 6px 0;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+    .section {
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .meta-row div {
+      width: 48%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+    table th, table td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      font-size: 11px;
+      vertical-align: top;
+    }
+    table th {
+      font-weight: bold;
+      text-align: left;
+      background: #f2f2f2;
+    }
+    .notes-box {
+      min-height: 50px;
+      border: 1px solid #000;
+      padding: 6px;
+      white-space: pre-wrap;
+    }
+    .signature-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .signature-block {
+      width: 45%;
+      text-align: center;
+      font-size: 11px;
+    }
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-top: 40px;
+      padding-top: 3px;
+    }
+    .small {
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Eszköz átadás-átvételi jegyzőkönyv</h1>
+
+<div class="section">
+  <div class="meta-row">
+    <div>
+      <div class="section-title">Cégadatok</div>
+      <div><strong>Cégnév:</strong> Foxpost Kft.</div>
+      <div><strong>Székhely:</strong> 1068 Budapest, Dózsa György út 84. B. ép.</div>
+      <div><strong>Adószám:</strong> 32435119-2-42</div>
+    </div>
+    <div>
+      <div class="section-title">Átadás adatai</div>
+      <div><strong>Átvevő neve:</strong> {{RECEIVER_NAME}}</div>
+      <div><strong>Dátum:</strong> {{DATE}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Átadott eszközök – összesítés</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Eszköz neve</th>
+        <th>Mennyiség</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Ide generálja a rendszer a sorokat -->
+      {{GENERAL_ITEMS_ROWS}}
+      <!-- Példa sor:
+      <tr>
+        <td>1</td>
+        <td>PDA készülék</td>
+        <td>1 db</td>
+      </tr>
+      -->
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">PDA eszközök részletezése</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Eszköz neve</th>
+        <th>Mennyiség</th>
+        <th>Type</th>
+        <th>Custom flags</th>
+        <th>System flags</th>
+        <th>SIM card ID</th>
+        <th>Phone number</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Ide generálja a rendszer a PDA sorokat -->
+      {{PDA_ROWS}}
+      <!-- Példa sor:
+      <tr>
+        <td>1</td>
+        <td>PDA-001</td>
+        <td>1 db</td>
+        <td>PDA</td>
+        <td>FLAG_A, FLAG_B</td>
+        <td>SYS_X</td>
+        <td>8901234567890123456</td>
+        <td>+36 30 123 4567</td>
+        <td>Kézbesítő futár eszköze</td>
+      </tr>
+      -->
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Mobil nyomtatók (MOBILE_PRINTER) részletezése</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Eszköz neve</th>
+        <th>Mennyiség</th>
+        <th>Type</th>
+        <th>Custom flags</th>
+        <th>System flags</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Ide generálja a rendszer a MOBILE_PRINTER sorokat -->
+      {{MOBILE_PRINTER_ROWS}}
+      <!-- Példa sor:
+      <tr>
+        <td>1</td>
+        <td>Mobil nyomtató-01</td>
+        <td>1 db</td>
+        <td>MOBILE_PRINTER</td>
+        <td>FLAG_PRINT</td>
+        <td>SYS_PRINT</td>
+        <td>Csomagcímke nyomtatás</td>
+      </tr>
+      -->
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Megjegyzés(ek)</div>
+  <div class="notes-box">
+    {{NOTES}}
+  </div>
+</div>
+
+<div class="section">
+  <strong>Nyilatkozat:</strong><br />
+  Az eszközöket a rögzített adatoknak megfelelő állapotban vettem át.
+</div>
+
+<div class="signature-row">
+  <div class="signature-block">
+    <div class="signature-line">Átadó</div>
+    <div class="small">{{GIVER_NAME}}</div>
+  </div>
+  <div class="signature-block">
+    <div class="signature-line">Átvevő</div>
+    <div class="small">{{RECEIVER_NAME}}</div>
+  </div>
+</div>
+
+</body>
+</html>

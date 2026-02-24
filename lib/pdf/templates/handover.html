@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <title>Eszköz átadás-átvételi jegyzőkönyv</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 30px;
+      color: #000;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+    .section { margin-bottom: 16px; }
+    .section-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      gap: 4%;
+    }
+    .meta-row div { width: 48%; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+    table th, table td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      font-size: 11px;
+      vertical-align: top;
+    }
+    table th {
+      font-weight: bold;
+      text-align: left;
+      background: #f2f2f2;
+    }
+    .notes-box {
+      min-height: 50px;
+      border: 1px solid #000;
+      padding: 6px;
+      white-space: pre-wrap;
+    }
+    .signature-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      gap: 6%;
+    }
+    .signature-block {
+      width: 47%;
+      text-align: center;
+      font-size: 11px;
+    }
+    .signature-img {
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+    .signature-img img {
+      max-height: 80px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-top: 10px;
+      padding-top: 3px;
+    }
+    .small { font-size: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Eszköz átadás-átvételi jegyzőkönyv</h1>
+
+<div class="section">
+  <div class="meta-row">
+    <div>
+      <div class="section-title">Cégadatok</div>
+      <div><strong>Cégnév:</strong> Foxpost Kft.</div>
+      <div><strong>Székhely:</strong> 1068 Budapest, Dózsa György út 84. B. ép.</div>
+      <div><strong>Adószám:</strong> 32435119-2-42</div>
+    </div>
+    <div>
+      <div class="section-title">Átadás adatai</div>
+      <div><strong>Átvevő neve:</strong> {{RECEIVER_NAME}}</div>
+      <div><strong>Dátum:</strong> {{DATE}}</div>
+      <div><strong>Helyszín:</strong> {{LOCATION}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Átadott eszközök – összesítés</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Eszköz neve</th>
+        <th>Mennyiség</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{GENERAL_ITEMS_ROWS}}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">PDA eszközök részletezése</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Eszköz neve</th>
+        <th>Mennyiség</th>
+        <th>Type</th>
+        <th>Custom flags</th>
+        <th>System flags</th>
+        <th>SIM card ID</th>
+        <th>Phone number</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{PDA_ROWS}}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Mobil nyomtatók (MOBILE_PRINTER) részletezése</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Eszköz neve</th>
+        <th>Mennyiség</th>
+        <th>Type</th>
+        <th>Custom flags</th>
+        <th>System flags</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{MOBILE_PRINTER_ROWS}}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Megjegyzés(ek)</div>
+  <div class="notes-box">
+    {{NOTES}}
+  </div>
+</div>
+
+<div class="section">
+  <strong>Nyilatkozat:</strong><br />
+  Az eszközöket a rögzített adatoknak megfelelő állapotban vettem át.
+</div>
+
+<div class="signature-row">
+  <div class="signature-block">
+    <div class="signature-img">
+      {{GIVER_SIGNATURE}}
+    </div>
+    <div class="signature-line">{{GIVER_LABEL}}</div>
+    <div class="small">{{GIVER_NAME}}</div>
+  </div>
+  <div class="signature-block">
+    <div class="signature-img">
+      {{RECEIVER_SIGNATURE}}
+    </div>
+    <div class="signature-line">{{RECEIVER_LABEL}}</div>
+    <div class="small">{{RECEIVER_NAME}}</div>
+  </div>
+</div>
+
+</body>
+</html>
