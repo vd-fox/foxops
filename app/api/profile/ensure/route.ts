@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import type { Database } from '@/types/database';
+
+type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
 export async function POST() {
   const supabase = getSupabaseRouteClient();
@@ -20,22 +23,24 @@ export async function POST() {
 
   console.log('[profile/ensure] Upserting profile', { userId: session.user.id });
 
-  const { data: existingProfile } = await supabaseAdmin
+  const { data: existingProfileRaw } = await supabaseAdmin
     .from('profiles')
-    .select('role, active')
+    .select('role,active')
     .eq('id', session.user.id)
     .maybeSingle();
+  const existingProfile = existingProfileRaw as
+    | { role: ProfileInsert['role']; active: boolean }
+    | null;
 
-  await supabaseAdmin
-    .from('profiles')
-    .upsert({
-      id: session.user.id,
-      email: session.user.email ?? '',
-      full_name: session.user.user_metadata?.full_name || session.user.email || 'User',
-      role: existingProfile?.role ?? 'ADMIN',
-      active: existingProfile?.active ?? true
-    })
-    .throwOnError();
+  const payload: ProfileInsert = {
+    id: session.user.id,
+    email: session.user.email ?? '',
+    full_name: session.user.user_metadata?.full_name || session.user.email || 'User',
+    role: existingProfile?.role ?? 'ADMIN',
+    active: existingProfile?.active ?? true
+  };
+
+  await (supabaseAdmin as any).from('profiles').upsert(payload).throwOnError();
 
   return NextResponse.json({ ok: true });
 }

@@ -13,10 +13,19 @@ export default async function DevicesPage() {
     )
     .order('asset_tag');
 
+  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
+    Array.isArray(value) ? value[0] ?? null : value ?? null;
+
+  const normalizedDevices =
+    devices?.map((device) => ({
+      ...device,
+      profiles: pickFirst((device as { profiles?: unknown }).profiles) as { full_name: string | null } | null
+    })) ?? [];
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-primary">Devices</h1>
-      <DeviceManager devices={devices ?? []} canEdit={profile.role === 'ADMIN'} />
+      <DeviceManager devices={normalizedDevices} canEdit={profile.role === 'ADMIN'} />
     </div>
   );
 }

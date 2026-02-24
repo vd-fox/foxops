@@ -14,7 +14,10 @@ type Device = Database['public']['Tables']['devices']['Row'] & {
   holder?: { full_name: string | null; email: string | null } | null;
 };
 
-type Log = Database['public']['Tables']['handover_logs']['Row'] & {
+type Log = {
+  id: string;
+  action_type: Database['public']['Tables']['handover_logs']['Row']['action_type'];
+  timestamp: string;
   from_profile?: { full_name: string | null } | null;
   to_profile?: { full_name: string | null } | null;
   batch?: {
@@ -73,6 +76,25 @@ export default async function DeviceDetailPage({ params }: Props) {
     .eq('device_id', device.id)
     .order('changed_at', { ascending: false });
 
+  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
+    Array.isArray(value) ? value[0] ?? null : value ?? null;
+
+  const normalizedLogs: Log[] = (logs ?? []).map((log) => {
+    const fromProfile = pickFirst(log.from_profile);
+    const toProfile = pickFirst(log.to_profile);
+    const batch = pickFirst(log.batch);
+    const dispatcher = batch ? pickFirst(batch.dispatcher) : null;
+
+    return {
+      id: log.id,
+      action_type: log.action_type,
+      timestamp: log.timestamp,
+      from_profile: fromProfile,
+      to_profile: toProfile,
+      batch: batch ? { ...batch, dispatcher } : null
+    };
+  });
+
   return (
     <div className="space-y-4">
       <Link href="/devices" className="text-sm text-primary">
@@ -80,7 +102,7 @@ export default async function DeviceDetailPage({ params }: Props) {
       </Link>
       <DeviceDetail
         device={device as Device}
-        logs={(logs as Log[]) ?? []}
+        logs={normalizedLogs}
         canEdit={profile.role === 'ADMIN'}
         customFlags={flagDefinitions ?? []}
         flagValues={flagValues ?? []}

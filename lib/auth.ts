@@ -31,7 +31,7 @@ export async function getSessionProfile(requiredRoles?: Profile['role'][]): Prom
   if ((error || !profile) && supabaseAdmin && session.user.email) {
     const displayName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
     console.warn('[auth] Missing profile, attempting upsert', { userId: session.user.id });
-    await supabaseAdmin
+    await (supabaseAdmin as any)
       .from('profiles')
       .upsert({
         id: session.user.id,

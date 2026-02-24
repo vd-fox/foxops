@@ -151,15 +151,18 @@ export async function POST(req: NextRequest) {
     .from('device_flag_values')
     .select('device_id, value, note, definition:device_flag_definitions(name)')
     .in('device_id', deviceIds);
+  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
+    Array.isArray(value) ? value[0] ?? null : value ?? null;
   const flagValuesByDevice = new Map<
     string,
     { name: string; value: boolean; note: string | null }[]
   >();
   (customFlagRowsData ?? []).forEach((row) => {
     if (!row.device_id) return;
+    const definition = pickFirst(row.definition);
     const entries = flagValuesByDevice.get(row.device_id) ?? [];
     entries.push({
-      name: row.definition?.name ?? 'Flag',
+      name: definition?.name ?? 'Flag',
       value: Boolean(row.value),
       note: row.note ?? null
     });
@@ -241,8 +244,6 @@ export async function POST(req: NextRequest) {
             description: device.description || '—'
           };
         }),
-      courierSignature: signature,
-      dispatcherSignature
     });
     const pdfPath = `${courierId}/${batch.id}.pdf`;
     const pdfUrl = await uploadToBucket({

@@ -52,7 +52,7 @@ export default async function UserDetailPage({ params }: Props) {
     .eq('current_holder_id', user.id)
     .order('asset_tag');
 
-  const { data: handoverBatches, error: batchError } = await supabase
+  const { data: handoverBatchesRaw, error: batchError } = await supabase
     .from('handover_batches')
     .select(
       `
@@ -72,11 +72,24 @@ export default async function UserDetailPage({ params }: Props) {
       `
     )
     .or(`courier_id.eq.${user.id},dispatcher_id.eq.${user.id}`)
-    .order('created_at', { ascending: false }) as unknown as HandoverBatch[] | null;
+    .order('created_at', { ascending: false });
 
   if (batchError) {
     console.error('[users/id] handover batch fetch failed', batchError.message);
   }
+
+  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
+    Array.isArray(value) ? value[0] ?? null : value ?? null;
+
+  const handoverBatches: HandoverBatch[] =
+    handoverBatchesRaw?.map((batch) => ({
+      ...batch,
+      logs:
+        batch.logs?.map((log) => ({
+          ...log,
+          device: pickFirst(log.device)
+        })) ?? null
+    })) ?? [];
 
   const mapDevices = (batch: HandoverBatch): DeviceGroup => {
     const logs = batch.logs ?? [];

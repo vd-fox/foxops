@@ -1,8 +1,11 @@
 import { ReactNode } from 'react';
 import { getSessionProfile } from '@/lib/auth';
 import { ProtectedNav } from '@/components/layout/ProtectedNav';
+import type { Database } from '@/types/database';
 
-const navItems = [
+type Profile = Database['public']['Tables']['profiles']['Row'];
+
+const navItems: { href: string; label: string; roles?: Profile['role'][] }[] = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/users', label: 'Users', roles: ['ADMIN'] },
   { href: '/devices', label: 'Devices' },

@@ -11,7 +11,10 @@ type Device = Database['public']['Tables']['devices']['Row'] & {
   holder?: { full_name: string | null; email: string | null } | null;
 };
 
-type Log = Database['public']['Tables']['handover_logs']['Row'] & {
+type Log = {
+  id: string;
+  action_type: Database['public']['Tables']['handover_logs']['Row']['action_type'];
+  timestamp: string;
   from_profile?: { full_name: string | null } | null;
   to_profile?: { full_name: string | null } | null;
   batch?: {

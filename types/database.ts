@@ -53,7 +53,7 @@ export type Database = {
           asset_tag: string;
           type: 'PDA' | 'MOBILE_PRINTER';
           description: string | null;
-          status: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN';
+          status: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
           current_holder_id: string | null;
           sim_card_id: string | null;
           phone_number: string | null;
@@ -69,7 +69,7 @@ export type Database = {
           asset_tag: string;
           type: 'PDA' | 'MOBILE_PRINTER';
           description?: string | null;
-          status?: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN';
+          status?: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
           current_holder_id?: string | null;
           sim_card_id?: string | null;
           phone_number?: string | null;
@@ -84,7 +84,7 @@ export type Database = {
           asset_tag?: string;
           type?: 'PDA' | 'MOBILE_PRINTER';
           description?: string | null;
-          status?: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN';
+          status?: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
           current_holder_id?: string | null;
           sim_card_id?: string | null;
           phone_number?: string | null;

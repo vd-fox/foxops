@@ -35,12 +35,20 @@ export default async function DashboardPage() {
     { total: 0, status: {}, type: {} }
   );
 
-  const recentHandovers = (handoverLogs ?? []).map((log) => ({
-    id: log.id,
-    action: log.action_type,
-    timestamp: log.timestamp,
-    assetTag: log.device?.asset_tag ?? 'Ismeretlen eszköz'
-  }));
+  const recentHandovers = (handoverLogs ?? []).map((log) => {
+    const rawDevice = (log as { device?: unknown }).device;
+    const device = (Array.isArray(rawDevice) ? rawDevice[0] : rawDevice) as
+      | { asset_tag?: string | null }
+      | null
+      | undefined;
+
+    return {
+      id: log.id,
+      action: log.action_type,
+      timestamp: log.timestamp,
+      assetTag: device?.asset_tag ?? 'Ismeretlen eszköz'
+    };
+  });
 
   const formatTimestamp = (value: string) => format(new Date(value), 'yyyy.MM.dd HH:mm');
 

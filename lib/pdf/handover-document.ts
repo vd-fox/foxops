@@ -126,7 +126,7 @@ export async function generateHandoverPdf(payload: HandoverDocumentPayload) {
   const html = injectContent(template, payload);
 
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: true,
     args: ['--no-sandbox', '--font-render-hinting=medium']
   });
 

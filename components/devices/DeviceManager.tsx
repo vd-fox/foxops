@@ -15,7 +15,7 @@ const statuses: Database['public']['Tables']['devices']['Row']['status'][] = [
 
 const types: Database['public']['Tables']['devices']['Row']['type'][] = ['PDA', 'MOBILE_PRINTER'];
 
-type DeviceRow = Database['public']['Tables']['devices']['Row'] & {
+type DeviceRow = Pick<Database['public']['Tables']['devices']['Row'], 'id' | 'asset_tag' | 'type' | 'status'> & {
   profiles?: { full_name: string | null } | null;
 };
 
