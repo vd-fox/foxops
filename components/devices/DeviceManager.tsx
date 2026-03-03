@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { Database } from '@/types/database';
@@ -52,6 +52,20 @@ export function DeviceManager({
   });
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
+  const filteredDeviceTypes = useMemo(
+    () => deviceTypes.filter((deviceType) => deviceType.category === form.type),
+    [deviceTypes, form.type]
+  );
+
+  useEffect(() => {
+    if (!filteredDeviceTypes.length) {
+      setForm((prev) => ({ ...prev, device_type_id: '' }));
+      return;
+    }
+    if (!filteredDeviceTypes.some((deviceType) => deviceType.id === form.device_type_id)) {
+      setForm((prev) => ({ ...prev, device_type_id: filteredDeviceTypes[0].id }));
+    }
+  }, [filteredDeviceTypes, form.device_type_id]);
 
   const filtered = useMemo(() => {
     return devices.filter((device) => {
@@ -212,9 +226,15 @@ export function DeviceManager({
               <select
                 className="mt-1 w-full rounded border border-gray-300 p-2"
                 value={form.type}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, type: e.target.value as DeviceRow['type'] }))
-                }
+                onChange={(e) => {
+                  const nextType = e.target.value as DeviceRow['type'];
+                  setForm((prev) => ({
+                    ...prev,
+                    type: nextType,
+                    tss: nextType === 'MOBILE_PRINTER' ? false : prev.tss,
+                    tss_valid_until: nextType === 'MOBILE_PRINTER' ? '' : prev.tss_valid_until
+                  }));
+                }}
               >
                 {types.map((type) => (
                   <option key={type} value={type}>
@@ -231,12 +251,12 @@ export function DeviceManager({
                 onChange={(e) => setForm((prev) => ({ ...prev, device_type_id: e.target.value }))}
                 required
               >
-                {deviceTypes.length === 0 && (
+                {filteredDeviceTypes.length === 0 && (
                   <option value="" disabled>
                     No device types
                   </option>
                 )}
-                {deviceTypes.map((type) => (
+                {filteredDeviceTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.name}
                   </option>
@@ -303,36 +323,42 @@ export function DeviceManager({
             </div>
             <div>
               <label className="text-xs uppercase text-gray-500">TSS</label>
-              <div className="mt-1 flex gap-4 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="tss"
-                    checked={form.tss}
-                    onChange={() => setForm((prev) => ({ ...prev, tss: true }))}
-                  />
-                  Igen
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="tss"
-                    checked={!form.tss}
-                    onChange={() => setForm((prev) => ({ ...prev, tss: false, tss_valid_until: '' }))}
-                  />
-                  Nem
-                </label>
-              </div>
-              {form.tss && (
-                <input
-                  type="date"
-                  className="mt-2 w-full rounded border border-gray-300 p-2"
-                  value={form.tss_valid_until}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, tss_valid_until: e.target.value }))
-                  }
-                  required
-                />
+              {form.type === 'MOBILE_PRINTER' ? (
+                <p className="mt-2 text-xs text-gray-500">TSS nem elérhető mobil printerhez.</p>
+              ) : (
+                <>
+                  <div className="mt-1 flex gap-4 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="tss"
+                        checked={form.tss}
+                        onChange={() => setForm((prev) => ({ ...prev, tss: true }))}
+                      />
+                      Igen
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="tss"
+                        checked={!form.tss}
+                        onChange={() => setForm((prev) => ({ ...prev, tss: false, tss_valid_until: '' }))}
+                      />
+                      Nem
+                    </label>
+                  </div>
+                  {form.tss && (
+                    <input
+                      type="date"
+                      className="mt-2 w-full rounded border border-gray-300 p-2"
+                      value={form.tss_valid_until}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, tss_valid_until: e.target.value }))
+                      }
+                      required
+                    />
+                  )}
+                </>
               )}
             </div>
             <div>

@@ -6,7 +6,8 @@ import { hashPin } from '@/lib/utils/pin';
 import type { Database } from '@/types/database';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
-const allowedRoles: Profile['role'][] = ['ADMIN', 'COURIER'];
+type CourierType = Database['public']['Tables']['profiles']['Row']['courier_type'];
+type UserType = 'ADMIN' | 'CONTRACTOR' | 'EMPLOYEE';
 
 const adminClient = () => {
   if (!supabaseAdmin) {
@@ -36,28 +37,161 @@ export async function POST(req: NextRequest) {
   if ('error' in auth) return auth.error;
   const { supabase } = auth;
   const body = await req.json();
-  const { email, password, full_name, role, pin } = body;
-  const needsPassword = role === 'ADMIN';
-  if (!full_name || !role || (needsPassword && (!password || !email))) {
-    return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+  const { user_type } = body as { user_type?: UserType };
+
+  if (!user_type || !['ADMIN', 'CONTRACTOR', 'EMPLOYEE'].includes(user_type)) {
+    return NextResponse.json({ message: 'Invalid user type supplied' }, { status: 400 });
   }
-  if (typeof role !== 'string' || !allowedRoles.includes(role as Profile['role'])) {
-    return NextResponse.json({ message: 'Invalid role supplied' }, { status: 400 });
-  }
-  const normalizedPin =
-    typeof pin === 'number'
-      ? pin.toString().padStart(4, '0')
-      : typeof pin === 'string'
-        ? pin.trim()
+
+  const normalizeEmailPart = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, '.')
+      .toLowerCase();
+
+  const buildCourierEmail = (first: string, last: string) => {
+    const firstPart = normalizeEmailPart(first);
+    const lastPart = normalizeEmailPart(last);
+    if (!firstPart || !lastPart) {
+      throw new Error('Invalid name for email generation');
+    }
+    return `${firstPart}.${lastPart}@foxpost.hu`;
+  };
+
+  const normalizePin = (value: unknown) =>
+    typeof value === 'number'
+      ? value.toString().padStart(4, '0')
+      : typeof value === 'string'
+        ? value.trim()
         : '';
-  if (role === 'COURIER' && !/^\d{4}$/.test(normalizedPin)) {
-    return NextResponse.json({ message: 'PIN must be exactly 4 digits' }, { status: 400 });
+
+  const ensurePin = (value: unknown) => {
+    const normalized = normalizePin(value);
+    if (!/^\d{4}$/.test(normalized)) {
+      return { error: NextResponse.json({ message: 'PIN must be exactly 4 digits' }, { status: 400 }) } as const;
+    }
+    return { pin: normalized } as const;
+  };
+
+  let role: Profile['role'] = 'ADMIN';
+  let finalEmail = '';
+  let finalPassword = '';
+  let profileInsert: Partial<Profile> = { active: true };
+
+  if (user_type === 'ADMIN') {
+    const { email, password, full_name } = body as {
+      email?: string;
+      password?: string;
+      full_name?: string;
+    };
+    if (!full_name || !email || !password) {
+      return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+    }
+    role = 'ADMIN';
+    finalEmail = email;
+    finalPassword = password;
+    profileInsert = {
+      ...profileInsert,
+      full_name,
+      role
+    };
+  } else if (user_type === 'CONTRACTOR') {
+    const {
+      company_name,
+      vat_number,
+      company_number,
+      representative_first_name,
+      representative_last_name,
+      representative_email,
+      representative_phone,
+      pin
+    } = body as {
+      company_name?: string;
+      vat_number?: string;
+      company_number?: string;
+      representative_first_name?: string;
+      representative_last_name?: string;
+      representative_email?: string;
+      representative_phone?: string;
+      pin?: string;
+    };
+
+    if (
+      !company_name ||
+      !vat_number ||
+      !company_number ||
+      !representative_first_name ||
+      !representative_last_name ||
+      !representative_email ||
+      !representative_phone
+    ) {
+      return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+    }
+    const pinCheck = ensurePin(pin);
+    if ('error' in pinCheck) return pinCheck.error;
+
+    role = 'COURIER';
+    try {
+      finalEmail = buildCourierEmail(representative_first_name, representative_last_name);
+    } catch (error) {
+      return NextResponse.json({ message: (error as Error).message }, { status: 400 });
+    }
+    finalPassword = randomBytes(24).toString('base64');
+    profileInsert = {
+      ...profileInsert,
+      full_name: `${representative_first_name} ${representative_last_name}`,
+      role,
+      courier_type: 'CONTRACTOR' as CourierType,
+      company_name,
+      vat_number,
+      company_number,
+      representative_first_name,
+      representative_last_name,
+      representative_email,
+      representative_phone,
+      pin_hash: await hashPin(pinCheck.pin)
+    };
+  } else if (user_type === 'EMPLOYEE') {
+    const { first_name, last_name, employee_email, employee_phone, employee_id, position, pin } = body as {
+      first_name?: string;
+      last_name?: string;
+      employee_email?: string;
+      employee_phone?: string;
+      employee_id?: string;
+      position?: string;
+      pin?: string;
+    };
+
+    if (!first_name || !last_name || !employee_email || !employee_phone || !employee_id || !position) {
+      return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+    }
+    const pinCheck = ensurePin(pin);
+    if ('error' in pinCheck) return pinCheck.error;
+
+    role = 'COURIER';
+    try {
+      finalEmail = buildCourierEmail(first_name, last_name);
+    } catch (error) {
+      return NextResponse.json({ message: (error as Error).message }, { status: 400 });
+    }
+    finalPassword = randomBytes(24).toString('base64');
+    profileInsert = {
+      ...profileInsert,
+      full_name: `${first_name} ${last_name}`,
+      role,
+      courier_type: 'EMPLOYEE' as CourierType,
+      first_name,
+      last_name,
+      employee_email,
+      employee_phone,
+      employee_id,
+      position,
+      pin_hash: await hashPin(pinCheck.pin)
+    };
   }
-  const finalEmail =
-    role === 'ADMIN'
-      ? (email as string)
-      : `courier+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@foxchange.internal`;
-  const finalPassword = needsPassword ? (password as string) : randomBytes(24).toString('base64');
   const admin = adminClient();
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: finalEmail,
@@ -70,10 +204,7 @@ export async function POST(req: NextRequest) {
   const insert = {
     id: created.user.id,
     email: finalEmail,
-    full_name,
-    role: role as Profile['role'],
-    active: true,
-    pin_hash: role === 'COURIER' ? await hashPin(normalizedPin) : null
+    ...profileInsert
   };
   const { error } = await supabase.from('profiles').upsert(insert, { onConflict: 'id' });
   if (error) {

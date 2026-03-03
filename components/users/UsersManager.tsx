@@ -20,10 +20,23 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
   const [filter, setFilter] = useState<RoleFilter>('ALL');
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
+    user_type: 'ADMIN' as 'ADMIN' | 'CONTRACTOR' | 'EMPLOYEE',
     full_name: '',
     email: '',
-    role: 'ADMIN' as Profile['role'],
     password: '',
+    company_name: '',
+    vat_number: '',
+    company_number: '',
+    representative_first_name: '',
+    representative_last_name: '',
+    representative_email: '',
+    representative_phone: '',
+    first_name: '',
+    last_name: '',
+    employee_email: '',
+    employee_phone: '',
+    employee_id: '',
+    position: '',
     pin: ''
   });
   const [loading, setLoading] = useState(false);
@@ -47,28 +60,80 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
     e.preventDefault();
     setLoading(true);
     setMessage(null);
-    if (form.role === 'COURIER' && !/^\d{4}$/.test(form.pin)) {
+    if (form.user_type !== 'ADMIN' && !/^\d{4}$/.test(form.pin)) {
       setLoading(false);
       setMessage('PIN must be exactly 4 digits');
       return;
     }
-    const payload: {
-      full_name: string;
-      email?: string;
-      role: Profile['role'];
-      password?: string;
-      pin?: string;
-    } = {
-      full_name: form.full_name,
-      role: form.role,
-      pin: form.role === 'COURIER' ? form.pin : undefined
-    };
-    if (form.role === 'ADMIN') {
-      payload.email = form.email;
-      payload.password = form.password;
+
+    let payload: Record<string, unknown> = { user_type: form.user_type };
+
+    if (form.user_type === 'ADMIN') {
+      if (!form.full_name || !form.email || !form.password) {
+        setLoading(false);
+        setMessage('Missing fields');
+        return;
+      }
+      payload = {
+        ...payload,
+        full_name: form.full_name,
+        email: form.email,
+        password: form.password
+      };
     }
-    if (form.role === 'ADMIN') {
-      payload.password = form.password;
+
+    if (form.user_type === 'CONTRACTOR') {
+      const requiredFields = [
+        form.company_name,
+        form.vat_number,
+        form.company_number,
+        form.representative_first_name,
+        form.representative_last_name,
+        form.representative_email,
+        form.representative_phone
+      ];
+      if (requiredFields.some((value) => !value.trim())) {
+        setLoading(false);
+        setMessage('Missing fields');
+        return;
+      }
+      payload = {
+        ...payload,
+        company_name: form.company_name,
+        vat_number: form.vat_number,
+        company_number: form.company_number,
+        representative_first_name: form.representative_first_name,
+        representative_last_name: form.representative_last_name,
+        representative_email: form.representative_email,
+        representative_phone: form.representative_phone,
+        pin: form.pin
+      };
+    }
+
+    if (form.user_type === 'EMPLOYEE') {
+      const requiredFields = [
+        form.first_name,
+        form.last_name,
+        form.employee_email,
+        form.employee_phone,
+        form.employee_id,
+        form.position
+      ];
+      if (requiredFields.some((value) => !value.trim())) {
+        setLoading(false);
+        setMessage('Missing fields');
+        return;
+      }
+      payload = {
+        ...payload,
+        first_name: form.first_name,
+        last_name: form.last_name,
+        employee_email: form.employee_email,
+        employee_phone: form.employee_phone,
+        employee_id: form.employee_id,
+        position: form.position,
+        pin: form.pin
+      };
     }
 
     const res = await fetch('/api/users', {
@@ -82,7 +147,26 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
       setMessage(data.message || 'Failed to create user');
       return;
     }
-    setForm({ full_name: '', email: '', role: 'ADMIN', password: '', pin: '' });
+    setForm({
+      user_type: 'ADMIN',
+      full_name: '',
+      email: '',
+      password: '',
+      company_name: '',
+      vat_number: '',
+      company_number: '',
+      representative_first_name: '',
+      representative_last_name: '',
+      representative_email: '',
+      representative_phone: '',
+      first_name: '',
+      last_name: '',
+      employee_email: '',
+      employee_phone: '',
+      employee_id: '',
+      position: '',
+      pin: ''
+    });
     setMessage('User created');
     await refresh();
   };
@@ -177,66 +261,215 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
         <form onSubmit={handleCreate} className="mt-4 space-y-3">
           {message && <p className="text-sm text-primary">{message}</p>}
           <div>
-            <label className="text-xs uppercase text-gray-500">Full name</label>
-            <input
-              className="mt-1 w-full rounded border border-gray-300 p-2"
-              value={form.full_name}
-              onChange={(e) => setForm((prev) => ({ ...prev, full_name: e.target.value }))}
-              required
-            />
-          </div>
-          {form.role === 'COURIER' && (
-            <div>
-              <label className="text-xs uppercase text-gray-500">PIN (exactly 4 digits)</label>
-              <input
-                className="mt-1 w-full rounded border border-gray-300 p-2"
-                value={form.pin}
-                onChange={(e) => {
-                  const next = e.target.value.replace(/\D/g, '').slice(0, 4);
-                  setForm((prev) => ({ ...prev, pin: next }));
-                }}
-                inputMode="numeric"
-                pattern="\d{4}"
-                maxLength={4}
-                required
-              />
-            </div>
-          )}
-          {form.role === 'ADMIN' && (
-            <div>
-              <label className="text-xs uppercase text-gray-500">Email</label>
-              <input
-                type="email"
-                className="mt-1 w-full rounded border border-gray-300 p-2"
-                value={form.email}
-                onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                required
-              />
-            </div>
-          )}
-          {form.role === 'ADMIN' ? (
-            <div>
-              <label className="text-xs uppercase text-gray-500">Password</label>
-              <input
-                type="password"
-                className="mt-1 w-full rounded border border-gray-300 p-2"
-                value={form.password}
-                onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                required
-              />
-            </div>
-          ) : null}
-          <div>
-            <label className="text-xs uppercase text-gray-500">Role</label>
+            <label className="text-xs uppercase text-gray-500">User type</label>
             <select
               className="mt-1 w-full rounded border border-gray-300 p-2"
-              value={form.role}
-              onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as Profile['role'] }))}
+              value={form.user_type}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, user_type: e.target.value as 'ADMIN' | 'CONTRACTOR' | 'EMPLOYEE' }))
+              }
             >
               <option value="ADMIN">Admin</option>
-              <option value="COURIER">Courier</option>
+              <option value="CONTRACTOR">Vállalkozó (courier)</option>
+              <option value="EMPLOYEE">Munkavállaló (courier)</option>
             </select>
           </div>
+          {form.user_type === 'ADMIN' && (
+            <>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Full name</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.full_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, full_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Email</label>
+                <input
+                  type="email"
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Password</label>
+                <input
+                  type="password"
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.password}
+                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                />
+              </div>
+            </>
+          )}
+          {form.user_type === 'CONTRACTOR' && (
+            <>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Company name</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.company_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, company_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Vat number</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.vat_number}
+                  onChange={(e) => setForm((prev) => ({ ...prev, vat_number: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Company number</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.company_number}
+                  onChange={(e) => setForm((prev) => ({ ...prev, company_number: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Representative firstname</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.representative_first_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, representative_first_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Representative lastname</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.representative_last_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, representative_last_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Representative email address</label>
+                <input
+                  type="email"
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.representative_email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, representative_email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Representative phone number</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.representative_phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, representative_phone: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">PIN code (4 digits)</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.pin}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setForm((prev) => ({ ...prev, pin: next }));
+                  }}
+                  inputMode="numeric"
+                  pattern="\d{4}"
+                  maxLength={4}
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                Courier email will be generated as firstname.lastname@foxpost.hu
+              </p>
+            </>
+          )}
+          {form.user_type === 'EMPLOYEE' && (
+            <>
+              <div>
+                <label className="text-xs uppercase text-gray-500">First name</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.first_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, first_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Last name</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.last_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, last_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Email address</label>
+                <input
+                  type="email"
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.employee_email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, employee_email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Phone number</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.employee_phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, employee_phone: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Employee ID</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.employee_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, employee_id: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Position</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.position}
+                  onChange={(e) => setForm((prev) => ({ ...prev, position: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">PIN code (4 digits)</label>
+                <input
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.pin}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setForm((prev) => ({ ...prev, pin: next }));
+                  }}
+                  inputMode="numeric"
+                  pattern="\d{4}"
+                  maxLength={4}
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                Courier email will be generated as firstname.lastname@foxpost.hu
+              </p>
+            </>
+          )}
           <button
             type="submit"
             disabled={loading}

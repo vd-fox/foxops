@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
   if ('error' in auth) return auth.error;
   const supabase = supabaseAdmin ?? auth.supabase;
   const body = await req.json();
-  const { name } = body;
-  if (!name) {
-    return NextResponse.json({ message: 'Name is required' }, { status: 400 });
+  const { name, category } = body;
+  if (!name || !category) {
+    return NextResponse.json({ message: 'Name and category are required' }, { status: 400 });
   }
   const { data, error } = await supabase
     .from('device_type_definitions')
-    .insert({ name })
+    .insert({ name, category })
     .select('*')
     .single();
   if (error) {

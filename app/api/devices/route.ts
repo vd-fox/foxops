@@ -56,6 +56,11 @@ export async function POST(req: NextRequest) {
   if (is_faulty && !fault_note?.trim()) {
     return NextResponse.json({ message: 'Fault note is required' }, { status: 400 });
   }
+  if (type === 'MOBILE_PRINTER') {
+    if (tss || tss_valid_until) {
+      return NextResponse.json({ message: 'TSS is not available for mobile printers' }, { status: 400 });
+    }
+  }
   const { error } = await supabase.from('devices').insert({
     asset_tag,
     serial_number,
@@ -67,8 +72,8 @@ export async function POST(req: NextRequest) {
     phone_number: phone_number || null,
     insurance: Boolean(insurance),
     insurance_valid_until: insurance ? insurance_valid_until : null,
-    tss: Boolean(tss),
-    tss_valid_until: tss ? tss_valid_until : null,
+    tss: type === 'MOBILE_PRINTER' ? false : Boolean(tss),
+    tss_valid_until: type === 'MOBILE_PRINTER' ? null : tss ? tss_valid_until : null,
     is_damaged: Boolean(is_damaged),
     damage_note: damage_note || null,
     is_faulty: Boolean(is_faulty),

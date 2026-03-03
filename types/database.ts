@@ -15,7 +15,21 @@ export type Database = {
           email: string;
           full_name: string | null;
           role: 'ADMIN' | 'DISPATCHER' | 'COURIER';
+          courier_type: 'CONTRACTOR' | 'EMPLOYEE' | null;
           pin_hash: string | null;
+          company_name: string | null;
+          vat_number: string | null;
+          company_number: string | null;
+          representative_first_name: string | null;
+          representative_last_name: string | null;
+          representative_email: string | null;
+          representative_phone: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          employee_email: string | null;
+          employee_phone: string | null;
+          employee_id: string | null;
+          position: string | null;
           active: boolean;
           created_at: string;
           updated_at: string;
@@ -25,7 +39,21 @@ export type Database = {
           email: string;
           full_name?: string | null;
           role: 'ADMIN' | 'DISPATCHER' | 'COURIER';
+          courier_type?: 'CONTRACTOR' | 'EMPLOYEE' | null;
           pin_hash?: string | null;
+          company_name?: string | null;
+          vat_number?: string | null;
+          company_number?: string | null;
+          representative_first_name?: string | null;
+          representative_last_name?: string | null;
+          representative_email?: string | null;
+          representative_phone?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          employee_email?: string | null;
+          employee_phone?: string | null;
+          employee_id?: string | null;
+          position?: string | null;
           active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -34,7 +62,21 @@ export type Database = {
           email?: string;
           full_name?: string | null;
           role?: 'ADMIN' | 'DISPATCHER' | 'COURIER';
+          courier_type?: 'CONTRACTOR' | 'EMPLOYEE' | null;
           pin_hash?: string | null;
+          company_name?: string | null;
+          vat_number?: string | null;
+          company_number?: string | null;
+          representative_first_name?: string | null;
+          representative_last_name?: string | null;
+          representative_email?: string | null;
+          representative_phone?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          employee_email?: string | null;
+          employee_phone?: string | null;
+          employee_id?: string | null;
+          position?: string | null;
           active?: boolean;
           updated_at?: string;
         };
@@ -140,15 +182,18 @@ export type Database = {
         Row: {
           id: string;
           name: string;
+          category: 'PDA' | 'MOBILE_PRINTER';
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
+          category: 'PDA' | 'MOBILE_PRINTER';
           created_at?: string;
         };
         Update: {
           name?: string;
+          category?: 'PDA' | 'MOBILE_PRINTER';
         };
         Relationships: [];
       };
@@ -367,6 +412,7 @@ export type Database = {
     };
     Enums: {
       profile_role: 'ADMIN' | 'DISPATCHER' | 'COURIER';
+      courier_type: 'CONTRACTOR' | 'EMPLOYEE';
       device_type: 'PDA' | 'MOBILE_PRINTER';
       device_status: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
       handover_action: 'ISSUE' | 'RETURN';

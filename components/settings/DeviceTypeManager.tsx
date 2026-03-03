@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Database } from '@/types/database';
 
 type DeviceTypeDefinition = Database['public']['Tables']['device_type_definitions']['Row'];
+type DeviceCategory = Database['public']['Tables']['devices']['Row']['type'];
 
 type Props = {
   initialTypes: DeviceTypeDefinition[];
@@ -12,6 +13,7 @@ type Props = {
 export function DeviceTypeManager({ initialTypes }: Props) {
   const [types, setTypes] = useState(initialTypes);
   const [name, setName] = useState('');
+  const [category, setCategory] = useState<DeviceCategory>('PDA');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +35,7 @@ export function DeviceTypeManager({ initialTypes }: Props) {
     const res = await fetch('/api/device-types', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim() })
+      body: JSON.stringify({ name: name.trim(), category })
     });
     setLoading(false);
     if (!res.ok) {
@@ -42,6 +44,7 @@ export function DeviceTypeManager({ initialTypes }: Props) {
       return;
     }
     setName('');
+    setCategory('PDA');
     refresh();
   };
 
@@ -66,7 +69,10 @@ export function DeviceTypeManager({ initialTypes }: Props) {
           <ul className="mt-3 divide-y text-sm">
             {types.map((type) => (
               <li key={type.id} className="flex items-center justify-between py-2">
-                <span className="font-semibold">{type.name}</span>
+                <div>
+                  <p className="font-semibold">{type.name}</p>
+                  <p className="text-xs text-gray-500">{type.category}</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => handleDelete(type.id)}
@@ -91,6 +97,18 @@ export function DeviceTypeManager({ initialTypes }: Props) {
               onChange={(e) => setName(e.target.value)}
               required
             />
+          </div>
+          <div>
+            <label className="text-xs uppercase text-gray-500">Category</label>
+            <select
+              className="mt-1 w-full rounded border border-gray-300 p-2"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as DeviceCategory)}
+              required
+            >
+              <option value="PDA">PDA</option>
+              <option value="MOBILE_PRINTER">Mobilprinter</option>
+            </select>
           </div>
           <button
             type="submit"
