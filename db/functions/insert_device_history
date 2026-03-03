@@ -1,0 +1,15 @@
+
+begin
+  if p_old_value is distinct from p_new_value then
+    insert into public.device_history(device_id, field, old_value, new_value, changed_by)
+    values (p_device_id, p_field, p_old_value, p_new_value, p_user_id);
+  end if;
+end;
+
+
+arguments: 
+p_device_id - uuid
+p_field - text
+p_old_value - text
+p_new_value - text
+p_user_id - text

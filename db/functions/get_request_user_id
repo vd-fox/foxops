@@ -1,0 +1,14 @@
+
+declare
+  sub text;
+begin
+  begin
+    sub := nullif(current_setting('request.jwt.claim.sub', true), '');
+  exception when others then
+    sub := null;
+  end;
+  if sub is null then
+    return null;
+  end if;
+  return sub::uuid;
+end;

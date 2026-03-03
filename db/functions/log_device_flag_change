@@ -1,0 +1,32 @@
+
+declare
+  user_id uuid := public.get_request_user_id();
+  old_val boolean;
+  new_val boolean;
+  old_note text;
+  new_note text;
+begin
+  if TG_OP = 'DELETE' then
+    old_val := old.value;
+    old_note := old.note;
+    new_val := null;
+    new_note := null;
+    insert into public.device_flag_history(device_id, flag_id, old_value, new_value, old_note, new_note, changed_by)
+    values (old.device_id, old.flag_id, old_val, new_val, old_note, new_note, user_id);
+    return old;
+  elsif TG_OP = 'INSERT' then
+    insert into public.device_flag_history(device_id, flag_id, old_value, new_value, old_note, new_note, changed_by)
+    values (new.device_id, new.flag_id, null, new.value, null, new.note, user_id);
+    return new;
+  else
+    old_val := old.value;
+    new_val := new.value;
+    old_note := old.note;
+    new_note := new.note;
+    if old_val is distinct from new_val or old_note is distinct from new_note then
+      insert into public.device_flag_history(device_id, flag_id, old_value, new_value, old_note, new_note, changed_by)
+      values (new.device_id, new.flag_id, old_val, new_val, old_note, new_note, user_id);
+    end if;
+    return new;
+  end if;
+end;

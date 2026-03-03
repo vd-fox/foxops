@@ -1,0 +1,11 @@
+name: profile_role
+values: ADMIN, DISPATCHER, COURIER
+
+name: device_type
+values: PDA, MOBILE_PRINTER
+
+name: device_status
+values: AVAILABLE, ISSUED, LOST, BROKEN, IN_SERVICE
+
+name: handover_action
+values: ISSUE, RETURN

@@ -52,11 +52,18 @@ export type Database = {
           id: string;
           asset_tag: string;
           type: 'PDA' | 'MOBILE_PRINTER';
+          serial_number: string | null;
+          device_type_id: string | null;
+          supplier_id: string | null;
           description: string | null;
           status: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
           current_holder_id: string | null;
           sim_card_id: string | null;
           phone_number: string | null;
+          insurance: boolean;
+          insurance_valid_until: string | null;
+          tss: boolean;
+          tss_valid_until: string | null;
           is_damaged: boolean;
           damage_note: string | null;
           is_faulty: boolean;
@@ -68,11 +75,18 @@ export type Database = {
           id?: string;
           asset_tag: string;
           type: 'PDA' | 'MOBILE_PRINTER';
+          serial_number?: string | null;
+          device_type_id?: string | null;
+          supplier_id?: string | null;
           description?: string | null;
           status?: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
           current_holder_id?: string | null;
           sim_card_id?: string | null;
           phone_number?: string | null;
+          insurance?: boolean;
+          insurance_valid_until?: string | null;
+          tss?: boolean;
+          tss_valid_until?: string | null;
           is_damaged?: boolean;
           damage_note?: string | null;
           is_faulty?: boolean;
@@ -83,11 +97,18 @@ export type Database = {
         Update: {
           asset_tag?: string;
           type?: 'PDA' | 'MOBILE_PRINTER';
+          serial_number?: string | null;
+          device_type_id?: string | null;
+          supplier_id?: string | null;
           description?: string | null;
           status?: 'AVAILABLE' | 'ISSUED' | 'LOST' | 'BROKEN' | 'IN_SERVICE';
           current_holder_id?: string | null;
           sim_card_id?: string | null;
           phone_number?: string | null;
+          insurance?: boolean;
+          insurance_valid_until?: string | null;
+          tss?: boolean;
+          tss_valid_until?: string | null;
           is_damaged?: boolean;
           damage_note?: string | null;
           is_faulty?: boolean;
@@ -100,8 +121,52 @@ export type Database = {
             columns: ['current_holder_id'];
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'devices_device_type_id_fkey';
+            columns: ['device_type_id'];
+            referencedRelation: 'device_type_definitions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'devices_supplier_id_fkey';
+            columns: ['supplier_id'];
+            referencedRelation: 'device_supplier_definitions';
+            referencedColumns: ['id'];
           }
         ];
+      };
+      device_type_definitions: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+        };
+        Relationships: [];
+      };
+      device_supplier_definitions: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+        };
+        Relationships: [];
       };
       handover_batches: {
         Row: {

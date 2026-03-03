@@ -6,12 +6,16 @@ import { DeviceManager } from '@/components/devices/DeviceManager';
 export default async function DevicesPage() {
   const { profile } = await getSessionProfile(['ADMIN']);
   const supabase = supabaseAdmin ?? getSupabaseServerClient();
-  const { data: devices } = await supabase
-    .from('devices')
-    .select(
-      'id, asset_tag, type, status, description, current_holder_id, profiles!devices_current_holder_id_fkey(full_name)'
-    )
-    .order('asset_tag');
+  const [{ data: devices }, { data: deviceTypes }, { data: suppliers }] = await Promise.all([
+    supabase
+      .from('devices')
+      .select(
+        'id, asset_tag, type, status, description, current_holder_id, profiles!devices_current_holder_id_fkey(full_name)'
+      )
+      .order('asset_tag'),
+    supabase.from('device_type_definitions').select('*').order('name'),
+    supabase.from('device_supplier_definitions').select('*').order('name')
+  ]);
 
   const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
     Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -25,7 +29,12 @@ export default async function DevicesPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-primary">Devices</h1>
-      <DeviceManager devices={normalizedDevices} canEdit={profile.role === 'ADMIN'} />
+      <DeviceManager
+        devices={normalizedDevices}
+        canEdit={profile.role === 'ADMIN'}
+        deviceTypes={deviceTypes ?? []}
+        suppliers={suppliers ?? []}
+      />
     </div>
   );
 }

@@ -12,6 +12,8 @@ interface Props {
 
 type Device = Database['public']['Tables']['devices']['Row'] & {
   holder?: { full_name: string | null; email: string | null } | null;
+  device_type?: { id: string; name: string } | null;
+  supplier?: { id: string; name: string } | null;
 };
 
 type Log = {
@@ -41,7 +43,9 @@ export default async function DeviceDetailPage({ params }: Props) {
 
   const { data: device } = await supabase
     .from('devices')
-    .select('*, holder:profiles!devices_current_holder_id_fkey(full_name, email)')
+    .select(
+      '*, holder:profiles!devices_current_holder_id_fkey(full_name, email), device_type:device_type_definitions(id, name), supplier:device_supplier_definitions(id, name)'
+    )
     .eq('id', params.id)
     .single();
 
@@ -79,6 +83,14 @@ export default async function DeviceDetailPage({ params }: Props) {
   const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
     Array.isArray(value) ? value[0] ?? null : value ?? null;
 
+  const normalizedDevice = {
+    ...device,
+    device_type: pickFirst((device as { device_type?: unknown }).device_type) as
+      | { id: string; name: string }
+      | null,
+    supplier: pickFirst((device as { supplier?: unknown }).supplier) as { id: string; name: string } | null
+  };
+
   const normalizedLogs: Log[] = (logs ?? []).map((log) => {
     const fromProfile = pickFirst(log.from_profile);
     const toProfile = pickFirst(log.to_profile);
@@ -101,7 +113,7 @@ export default async function DeviceDetailPage({ params }: Props) {
         ← Back to devices
       </Link>
       <DeviceDetail
-        device={device as Device}
+        device={normalizedDevice as Device}
         logs={normalizedLogs}
         canEdit={profile.role === 'ADMIN'}
         customFlags={flagDefinitions ?? []}

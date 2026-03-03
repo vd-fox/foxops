@@ -9,6 +9,8 @@ import type { Database } from '@/types/database';
 
 type Device = Database['public']['Tables']['devices']['Row'] & {
   holder?: { full_name: string | null; email: string | null } | null;
+  device_type?: { id: string; name: string } | null;
+  supplier?: { id: string; name: string } | null;
 };
 
 type Log = {
@@ -209,6 +211,33 @@ export function DeviceDetail({
         <div className="mt-4 space-y-2 text-sm">
           <p>
             <span className="font-semibold">Type:</span> {device.type}
+          </p>
+          <p>
+            <span className="font-semibold">Device type:</span> {device.device_type?.name ?? '—'}
+          </p>
+          <p>
+            <span className="font-semibold">Serial number:</span> {device.serial_number ?? '—'}
+          </p>
+          <p>
+            <span className="font-semibold">Supplier:</span> {device.supplier?.name ?? '—'}
+          </p>
+          <p>
+            <span className="font-semibold">Insurance:</span> {device.insurance ? 'Igen' : 'Nem'}
+            {device.insurance && device.insurance_valid_until && (
+              <span className="text-gray-500">
+                {' '}
+                (valid until {format(new Date(device.insurance_valid_until), 'PP')})
+              </span>
+            )}
+          </p>
+          <p>
+            <span className="font-semibold">TSS:</span> {device.tss ? 'Igen' : 'Nem'}
+            {device.tss && device.tss_valid_until && (
+              <span className="text-gray-500">
+                {' '}
+                (valid until {format(new Date(device.tss_valid_until), 'PP')})
+              </span>
+            )}
           </p>
           <p>
             <span className="font-semibold">Holder:</span> {device.holder?.full_name ?? 'Stock'}

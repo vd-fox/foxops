@@ -1,0 +1,34 @@
+name: log_device_flag_change_trigger
+table: device_flag_values
+function: log_device_flag_change
+events: AFTER UPDATE, AFTER DELETE, AFTER INSERT
+orientation: ROW
+enabled mode: Origin
+
+name: log_device_update_trigger
+table: devices
+function: log_device_update
+events: AFTER UPDATE
+orientation: ROW
+enabled mode: Origin
+
+name: set_devices_updated_at
+table: devices
+function: set_updated_at
+events: BEFORE UPDATE
+orientation: ROW
+enabled mode: Origin
+
+name: set_profiles_updated_at
+table: profiles
+function: set_updated_at
+events: BEFORE UPDATE
+orientation: ROW
+enabled mode: Origin
+
+name: touch_device_flag_values
+table: evice_flag_values
+function: touch_device_flag_values
+events: BEFORE UPDATE
+orientation: ROW
+enabled mode: Origin

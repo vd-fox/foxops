@@ -23,10 +23,32 @@ export async function POST(req: NextRequest) {
   if ('error' in auth) return auth.error;
   const supabase = supabaseAdmin ?? auth.supabase;
   const body = await req.json();
-  const { asset_tag, type, description, sim_card_id, phone_number, is_damaged, damage_note, is_faulty, fault_note } =
-    body;
-  if (!asset_tag || !type) {
+  const {
+    asset_tag,
+    serial_number,
+    type,
+    device_type_id,
+    supplier_id,
+    insurance,
+    insurance_valid_until,
+    tss,
+    tss_valid_until,
+    description,
+    sim_card_id,
+    phone_number,
+    is_damaged,
+    damage_note,
+    is_faulty,
+    fault_note
+  } = body;
+  if (!asset_tag || !serial_number || !type || !device_type_id || !supplier_id) {
     return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+  }
+  if (insurance && !insurance_valid_until) {
+    return NextResponse.json({ message: 'Insurance valid until is required' }, { status: 400 });
+  }
+  if (tss && !tss_valid_until) {
+    return NextResponse.json({ message: 'TSS valid until is required' }, { status: 400 });
   }
   if (is_damaged && !damage_note?.trim()) {
     return NextResponse.json({ message: 'Damage note is required' }, { status: 400 });
@@ -36,10 +58,17 @@ export async function POST(req: NextRequest) {
   }
   const { error } = await supabase.from('devices').insert({
     asset_tag,
+    serial_number,
     type,
+    device_type_id,
+    supplier_id,
     description,
     sim_card_id: sim_card_id || null,
     phone_number: phone_number || null,
+    insurance: Boolean(insurance),
+    insurance_valid_until: insurance ? insurance_valid_until : null,
+    tss: Boolean(tss),
+    tss_valid_until: tss ? tss_valid_until : null,
     is_damaged: Boolean(is_damaged),
     damage_note: damage_note || null,
     is_faulty: Boolean(is_faulty),

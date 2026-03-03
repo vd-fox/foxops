@@ -1,0 +1,127 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.device_flag_definitions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  description text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT device_flag_definitions_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.device_flag_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  device_id uuid NOT NULL,
+  flag_id uuid NOT NULL,
+  old_value boolean,
+  new_value boolean,
+  old_note text,
+  new_note text,
+  changed_by uuid,
+  changed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT device_flag_history_pkey PRIMARY KEY (id),
+  CONSTRAINT device_flag_history_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(id),
+  CONSTRAINT device_flag_history_flag_id_fkey FOREIGN KEY (flag_id) REFERENCES public.device_flag_definitions(id)
+);
+CREATE TABLE public.device_flag_values (
+  device_id uuid NOT NULL,
+  flag_id uuid NOT NULL,
+  value boolean NOT NULL DEFAULT false,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  note text,
+  CONSTRAINT device_flag_values_pkey PRIMARY KEY (device_id, flag_id),
+  CONSTRAINT device_flag_values_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(id),
+  CONSTRAINT device_flag_values_flag_id_fkey FOREIGN KEY (flag_id) REFERENCES public.device_flag_definitions(id)
+);
+CREATE TABLE public.device_type_definitions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT device_type_definitions_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.device_supplier_definitions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT device_supplier_definitions_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.device_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  device_id uuid NOT NULL,
+  field text NOT NULL,
+  old_value text,
+  new_value text,
+  changed_by uuid,
+  changed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT device_history_pkey PRIMARY KEY (id),
+  CONSTRAINT device_history_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(id)
+);
+CREATE TABLE public.devices (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  asset_tag text NOT NULL UNIQUE,
+  type USER-DEFINED NOT NULL,
+  serial_number text,
+  device_type_id uuid,
+  supplier_id uuid,
+  description text,
+  status USER-DEFINED NOT NULL DEFAULT 'AVAILABLE'::device_status,
+  current_holder_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  sim_card_id text,
+  phone_number text,
+  insurance boolean NOT NULL DEFAULT false,
+  insurance_valid_until date,
+  tss boolean NOT NULL DEFAULT false,
+  tss_valid_until date,
+  is_damaged boolean NOT NULL DEFAULT false,
+  damage_note text,
+  is_faulty boolean NOT NULL DEFAULT false,
+  fault_note text,
+  CONSTRAINT devices_pkey PRIMARY KEY (id),
+  CONSTRAINT devices_current_holder_id_fkey FOREIGN KEY (current_holder_id) REFERENCES public.profiles(id),
+  CONSTRAINT devices_device_type_id_fkey FOREIGN KEY (device_type_id) REFERENCES public.device_type_definitions(id),
+  CONSTRAINT devices_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.device_supplier_definitions(id)
+);
+CREATE TABLE public.handover_batches (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  action_type USER-DEFINED NOT NULL,
+  courier_id uuid NOT NULL,
+  dispatcher_id uuid NOT NULL,
+  signature_path text NOT NULL,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  courier_signature_path text,
+  dispatcher_signature_path text,
+  document_path text,
+  handover_number bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  CONSTRAINT handover_batches_pkey PRIMARY KEY (id),
+  CONSTRAINT handover_batches_courier_id_fkey FOREIGN KEY (courier_id) REFERENCES public.profiles(id),
+  CONSTRAINT handover_batches_dispatcher_id_fkey FOREIGN KEY (dispatcher_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.handover_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  device_id uuid NOT NULL,
+  from_profile_id uuid,
+  to_profile_id uuid,
+  action_type USER-DEFINED NOT NULL,
+  timestamp timestamp with time zone NOT NULL DEFAULT now(),
+  batch_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT handover_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT handover_logs_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(id),
+  CONSTRAINT handover_logs_from_profile_id_fkey FOREIGN KEY (from_profile_id) REFERENCES public.profiles(id),
+  CONSTRAINT handover_logs_to_profile_id_fkey FOREIGN KEY (to_profile_id) REFERENCES public.profiles(id),
+  CONSTRAINT handover_logs_batch_id_fkey FOREIGN KEY (batch_id) REFERENCES public.handover_batches(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL UNIQUE,
+  full_name text,
+  role USER-DEFINED NOT NULL,
+  pin_hash text,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);

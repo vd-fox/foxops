@@ -19,11 +19,37 @@ type DeviceRow = Pick<Database['public']['Tables']['devices']['Row'], 'id' | 'as
   profiles?: { full_name: string | null } | null;
 };
 
-export function DeviceManager({ devices, canEdit }: { devices: DeviceRow[]; canEdit: boolean }) {
+type DeviceTypeDefinition = Database['public']['Tables']['device_type_definitions']['Row'];
+type DeviceSupplierDefinition = Database['public']['Tables']['device_supplier_definitions']['Row'];
+
+export function DeviceManager({
+  devices,
+  canEdit,
+  deviceTypes,
+  suppliers
+}: {
+  devices: DeviceRow[];
+  canEdit: boolean;
+  deviceTypes: DeviceTypeDefinition[];
+  suppliers: DeviceSupplierDefinition[];
+}) {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [form, setForm] = useState({ asset_tag: '', type: 'PDA', description: '' });
+  const defaultDeviceType = deviceTypes[0]?.id ?? '';
+  const defaultSupplier = suppliers[0]?.id ?? '';
+  const [form, setForm] = useState({
+    asset_tag: '',
+    serial_number: '',
+    type: 'PDA',
+    device_type_id: defaultDeviceType,
+    supplier_id: defaultSupplier,
+    insurance: false,
+    insurance_valid_until: '',
+    tss: false,
+    tss_valid_until: '',
+    description: ''
+  });
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
 
@@ -39,17 +65,55 @@ export function DeviceManager({ devices, canEdit }: { devices: DeviceRow[]; canE
   const createDevice = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+    if (!form.asset_tag.trim() || !form.serial_number.trim()) {
+      setMessage('Asset tag and serial number are required');
+      return;
+    }
+    if (!form.device_type_id) {
+      setMessage('Device type is required');
+      return;
+    }
+    if (!form.supplier_id) {
+      setMessage('Supplier is required');
+      return;
+    }
+    if (form.insurance && !form.insurance_valid_until) {
+      setMessage('Insurance valid until is required');
+      return;
+    }
+    if (form.tss && !form.tss_valid_until) {
+      setMessage('TSS valid until is required');
+      return;
+    }
+    const payload = {
+      ...form,
+      asset_tag: form.asset_tag.trim(),
+      serial_number: form.serial_number.trim(),
+      insurance_valid_until: form.insurance ? form.insurance_valid_until : null,
+      tss_valid_until: form.tss ? form.tss_valid_until : null
+    };
     const res = await fetch('/api/devices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
+      body: JSON.stringify(payload)
     });
     if (!res.ok) {
       const data = await res.json();
       setMessage(data.message || 'Failed to create device');
       return;
     }
-    setForm({ asset_tag: '', type: 'PDA', description: '' });
+    setForm({
+      asset_tag: '',
+      serial_number: '',
+      type: 'PDA',
+      device_type_id: defaultDeviceType,
+      supplier_id: defaultSupplier,
+      insurance: false,
+      insurance_valid_until: '',
+      tss: false,
+      tss_valid_until: '',
+      description: ''
+    });
     setMessage('Device created');
     router.refresh();
   };
@@ -135,7 +199,16 @@ export function DeviceManager({ devices, canEdit }: { devices: DeviceRow[]; canE
               />
             </div>
             <div>
-              <label className="text-xs uppercase text-gray-500">Type</label>
+              <label className="text-xs uppercase text-gray-500">Serial number</label>
+              <input
+                className="mt-1 w-full rounded border border-gray-300 p-2"
+                value={form.serial_number}
+                onChange={(e) => setForm((prev) => ({ ...prev, serial_number: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500">Category</label>
               <select
                 className="mt-1 w-full rounded border border-gray-300 p-2"
                 value={form.type}
@@ -149,6 +222,118 @@ export function DeviceManager({ devices, canEdit }: { devices: DeviceRow[]; canE
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500">Device type</label>
+              <select
+                className="mt-1 w-full rounded border border-gray-300 p-2"
+                value={form.device_type_id}
+                onChange={(e) => setForm((prev) => ({ ...prev, device_type_id: e.target.value }))}
+                required
+              >
+                {deviceTypes.length === 0 && (
+                  <option value="" disabled>
+                    No device types
+                  </option>
+                )}
+                {deviceTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500">Supplier</label>
+              <select
+                className="mt-1 w-full rounded border border-gray-300 p-2"
+                value={form.supplier_id}
+                onChange={(e) => setForm((prev) => ({ ...prev, supplier_id: e.target.value }))}
+                required
+              >
+                {suppliers.length === 0 && (
+                  <option value="" disabled>
+                    No suppliers
+                  </option>
+                )}
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500">Insurance</label>
+              <div className="mt-1 flex gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="insurance"
+                    checked={form.insurance}
+                    onChange={() =>
+                      setForm((prev) => ({ ...prev, insurance: true }))
+                    }
+                  />
+                  Igen
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="insurance"
+                    checked={!form.insurance}
+                    onChange={() =>
+                      setForm((prev) => ({ ...prev, insurance: false, insurance_valid_until: '' }))
+                    }
+                  />
+                  Nem
+                </label>
+              </div>
+              {form.insurance && (
+                <input
+                  type="date"
+                  className="mt-2 w-full rounded border border-gray-300 p-2"
+                  value={form.insurance_valid_until}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, insurance_valid_until: e.target.value }))
+                  }
+                  required
+                />
+              )}
+            </div>
+            <div>
+              <label className="text-xs uppercase text-gray-500">TSS</label>
+              <div className="mt-1 flex gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="tss"
+                    checked={form.tss}
+                    onChange={() => setForm((prev) => ({ ...prev, tss: true }))}
+                  />
+                  Igen
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="tss"
+                    checked={!form.tss}
+                    onChange={() => setForm((prev) => ({ ...prev, tss: false, tss_valid_until: '' }))}
+                  />
+                  Nem
+                </label>
+              </div>
+              {form.tss && (
+                <input
+                  type="date"
+                  className="mt-2 w-full rounded border border-gray-300 p-2"
+                  value={form.tss_valid_until}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, tss_valid_until: e.target.value }))
+                  }
+                  required
+                />
+              )}
             </div>
             <div>
               <label className="text-xs uppercase text-gray-500">Description</label>

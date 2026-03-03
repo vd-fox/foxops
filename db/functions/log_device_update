@@ -1,0 +1,19 @@
+
+declare
+  user_id uuid := public.get_request_user_id();
+begin
+  if TG_OP = 'UPDATE' then
+    perform public.insert_device_history(new.id, 'asset_tag', old.asset_tag, new.asset_tag, user_id);
+    perform public.insert_device_history(new.id, 'type', old.type::text, new.type::text, user_id);
+    perform public.insert_device_history(new.id, 'description', old.description, new.description, user_id);
+    perform public.insert_device_history(new.id, 'status', old.status::text, new.status::text, user_id);
+    perform public.insert_device_history(new.id, 'current_holder_id', old.current_holder_id::text, new.current_holder_id::text, user_id);
+    perform public.insert_device_history(new.id, 'sim_card_id', old.sim_card_id, new.sim_card_id, user_id);
+    perform public.insert_device_history(new.id, 'phone_number', old.phone_number, new.phone_number, user_id);
+    perform public.insert_device_history(new.id, 'is_damaged', old.is_damaged::text, new.is_damaged::text, user_id);
+    perform public.insert_device_history(new.id, 'damage_note', old.damage_note, new.damage_note, user_id);
+    perform public.insert_device_history(new.id, 'is_faulty', old.is_faulty::text, new.is_faulty::text, user_id);
+    perform public.insert_device_history(new.id, 'fault_note', old.fault_note, new.fault_note, user_id);
+  end if;
+  return new;
+end;
