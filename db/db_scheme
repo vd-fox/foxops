@@ -32,18 +32,6 @@ CREATE TABLE public.device_flag_values (
   CONSTRAINT device_flag_values_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(id),
   CONSTRAINT device_flag_values_flag_id_fkey FOREIGN KEY (flag_id) REFERENCES public.device_flag_definitions(id)
 );
-CREATE TABLE public.device_type_definitions (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT device_type_definitions_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.device_supplier_definitions (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT device_supplier_definitions_pkey PRIMARY KEY (id)
-);
 CREATE TABLE public.device_history (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   device_id uuid NOT NULL,
@@ -59,9 +47,6 @@ CREATE TABLE public.devices (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   asset_tag text NOT NULL UNIQUE,
   type USER-DEFINED NOT NULL,
-  serial_number text,
-  device_type_id uuid,
-  supplier_id uuid,
   description text,
   status USER-DEFINED NOT NULL DEFAULT 'AVAILABLE'::device_status,
   current_holder_id uuid,
@@ -69,18 +54,12 @@ CREATE TABLE public.devices (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   sim_card_id text,
   phone_number text,
-  insurance boolean NOT NULL DEFAULT false,
-  insurance_valid_until date,
-  tss boolean NOT NULL DEFAULT false,
-  tss_valid_until date,
   is_damaged boolean NOT NULL DEFAULT false,
   damage_note text,
   is_faulty boolean NOT NULL DEFAULT false,
   fault_note text,
   CONSTRAINT devices_pkey PRIMARY KEY (id),
-  CONSTRAINT devices_current_holder_id_fkey FOREIGN KEY (current_holder_id) REFERENCES public.profiles(id),
-  CONSTRAINT devices_device_type_id_fkey FOREIGN KEY (device_type_id) REFERENCES public.device_type_definitions(id),
-  CONSTRAINT devices_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.device_supplier_definitions(id)
+  CONSTRAINT devices_current_holder_id_fkey FOREIGN KEY (current_holder_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.handover_batches (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
