@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Database } from '@/types/database';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type SiteDefinition = Database['public']['Tables']['site_definitions']['Row'];
 
 type RoleFilter = 'ALL' | 'ADMIN' | 'COURIER';
 
@@ -15,8 +16,15 @@ const roleLabels: Record<RoleFilter, string> = {
   COURIER: 'Courier'
 };
 
-export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }) {
+export function UsersManager({
+  initialProfiles,
+  initialSites
+}: {
+  initialProfiles: Profile[];
+  initialSites: SiteDefinition[];
+}) {
   const [profiles, setProfiles] = useState(initialProfiles);
+  const [sites] = useState(initialSites);
   const [filter, setFilter] = useState<RoleFilter>('ALL');
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -37,8 +45,10 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
     employee_phone: '',
     employee_id: '',
     position: '',
+    site_id: '',
     pin: ''
   });
+  const [employeeEmailTouched, setEmployeeEmailTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -55,6 +65,33 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
       router.refresh();
     }
   };
+
+  const normalizeEmailPart = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, '.')
+      .toLowerCase();
+
+  const buildCourierEmail = (first: string, last: string) => {
+    const firstPart = normalizeEmailPart(first);
+    const lastPart = normalizeEmailPart(last);
+    if (!firstPart || !lastPart) return '';
+    return `${firstPart}.${lastPart}@foxpost.hu`;
+  };
+
+  useEffect(() => {
+    if (form.user_type !== 'EMPLOYEE') return;
+    if (employeeEmailTouched) return;
+    const nextEmail = buildCourierEmail(form.first_name, form.last_name);
+    setForm((prev) => ({ ...prev, employee_email: nextEmail }));
+  }, [form.user_type, form.first_name, form.last_name, employeeEmailTouched]);
+
+  useEffect(() => {
+    setEmployeeEmailTouched(false);
+  }, [form.user_type]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +115,8 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
         ...payload,
         full_name: form.full_name,
         email: form.email,
-        password: form.password
+        password: form.password,
+        site_id: form.site_id || null
       };
     }
 
@@ -106,6 +144,7 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
         representative_last_name: form.representative_last_name,
         representative_email: form.representative_email,
         representative_phone: form.representative_phone,
+        site_id: form.site_id || null,
         pin: form.pin
       };
     }
@@ -132,6 +171,7 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
         employee_phone: form.employee_phone,
         employee_id: form.employee_id,
         position: form.position,
+        site_id: form.site_id || null,
         pin: form.pin
       };
     }
@@ -165,6 +205,7 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
       employee_phone: '',
       employee_id: '',
       position: '',
+      site_id: '',
       pin: ''
     });
     setMessage('User created');
@@ -270,8 +311,8 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
               }
             >
               <option value="ADMIN">Admin</option>
-              <option value="CONTRACTOR">Vállalkozó (courier)</option>
-              <option value="EMPLOYEE">Munkavállaló (courier)</option>
+              <option value="CONTRACTOR">Contractor</option>
+              <option value="EMPLOYEE">Courier</option>
             </select>
           </div>
           {form.user_type === 'ADMIN' && (
@@ -284,6 +325,21 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
                   onChange={(e) => setForm((prev) => ({ ...prev, full_name: e.target.value }))}
                   required
                 />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Site</label>
+                <select
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.site_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, site_id: e.target.value }))}
+                >
+                  <option value="">—</option>
+                  {sites.map((site) => (
+                    <option key={site.id} value={site.id}>
+                      {site.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs uppercase text-gray-500">Email</label>
@@ -317,6 +373,21 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
                   onChange={(e) => setForm((prev) => ({ ...prev, company_name: e.target.value }))}
                   required
                 />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Site</label>
+                <select
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.site_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, site_id: e.target.value }))}
+                >
+                  <option value="">—</option>
+                  {sites.map((site) => (
+                    <option key={site.id} value={site.id}>
+                      {site.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs uppercase text-gray-500">Vat number</label>
@@ -389,7 +460,7 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
                 />
               </div>
               <p className="text-xs text-gray-500">
-                Courier email will be generated as firstname.lastname@foxpost.hu
+                Login email will be set to the representative email address.
               </p>
             </>
           )}
@@ -403,6 +474,21 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
                   onChange={(e) => setForm((prev) => ({ ...prev, first_name: e.target.value }))}
                   required
                 />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-gray-500">Site</label>
+                <select
+                  className="mt-1 w-full rounded border border-gray-300 p-2"
+                  value={form.site_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, site_id: e.target.value }))}
+                >
+                  <option value="">—</option>
+                  {sites.map((site) => (
+                    <option key={site.id} value={site.id}>
+                      {site.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs uppercase text-gray-500">Last name</label>
@@ -419,7 +505,10 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
                   type="email"
                   className="mt-1 w-full rounded border border-gray-300 p-2"
                   value={form.employee_email}
-                  onChange={(e) => setForm((prev) => ({ ...prev, employee_email: e.target.value }))}
+                  onChange={(e) => {
+                    setEmployeeEmailTouched(true);
+                    setForm((prev) => ({ ...prev, employee_email: e.target.value }));
+                  }}
                   required
                 />
               </div>
@@ -466,7 +555,7 @@ export function UsersManager({ initialProfiles }: { initialProfiles: Profile[] }
                 />
               </div>
               <p className="text-xs text-gray-500">
-                Courier email will be generated as firstname.lastname@foxpost.hu
+                Email auto-filled from name, but you can edit it if needed.
               </p>
             </>
           )}

@@ -82,10 +82,11 @@ export async function POST(req: NextRequest) {
   let profileInsert: Partial<Profile> = { active: true };
 
   if (user_type === 'ADMIN') {
-    const { email, password, full_name } = body as {
+    const { email, password, full_name, site_id } = body as {
       email?: string;
       password?: string;
       full_name?: string;
+      site_id?: string;
     };
     if (!full_name || !email || !password) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
@@ -96,7 +97,8 @@ export async function POST(req: NextRequest) {
     profileInsert = {
       ...profileInsert,
       full_name,
-      role
+      role,
+      site_id: site_id ?? null
     };
   } else if (user_type === 'CONTRACTOR') {
     const {
@@ -107,7 +109,8 @@ export async function POST(req: NextRequest) {
       representative_last_name,
       representative_email,
       representative_phone,
-      pin
+      pin,
+      site_id
     } = body as {
       company_name?: string;
       vat_number?: string;
@@ -117,6 +120,7 @@ export async function POST(req: NextRequest) {
       representative_email?: string;
       representative_phone?: string;
       pin?: string;
+      site_id?: string;
     };
 
     if (
@@ -134,11 +138,7 @@ export async function POST(req: NextRequest) {
     if ('error' in pinCheck) return pinCheck.error;
 
     role = 'COURIER';
-    try {
-      finalEmail = buildCourierEmail(representative_first_name, representative_last_name);
-    } catch (error) {
-      return NextResponse.json({ message: (error as Error).message }, { status: 400 });
-    }
+    finalEmail = representative_email;
     finalPassword = randomBytes(24).toString('base64');
     profileInsert = {
       ...profileInsert,
@@ -152,10 +152,11 @@ export async function POST(req: NextRequest) {
       representative_last_name,
       representative_email,
       representative_phone,
+      site_id: site_id ?? null,
       pin_hash: await hashPin(pinCheck.pin)
     };
   } else if (user_type === 'EMPLOYEE') {
-    const { first_name, last_name, employee_email, employee_phone, employee_id, position, pin } = body as {
+    const { first_name, last_name, employee_email, employee_phone, employee_id, position, pin, site_id } = body as {
       first_name?: string;
       last_name?: string;
       employee_email?: string;
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest) {
       employee_id?: string;
       position?: string;
       pin?: string;
+      site_id?: string;
     };
 
     if (!first_name || !last_name || !employee_email || !employee_phone || !employee_id || !position) {
@@ -172,10 +174,15 @@ export async function POST(req: NextRequest) {
     if ('error' in pinCheck) return pinCheck.error;
 
     role = 'COURIER';
-    try {
-      finalEmail = buildCourierEmail(first_name, last_name);
-    } catch (error) {
-      return NextResponse.json({ message: (error as Error).message }, { status: 400 });
+    const providedEmail = employee_email?.trim();
+    if (providedEmail) {
+      finalEmail = providedEmail;
+    } else {
+      try {
+        finalEmail = buildCourierEmail(first_name, last_name);
+      } catch (error) {
+        return NextResponse.json({ message: (error as Error).message }, { status: 400 });
+      }
     }
     finalPassword = randomBytes(24).toString('base64');
     profileInsert = {
@@ -189,6 +196,7 @@ export async function POST(req: NextRequest) {
       employee_phone,
       employee_id,
       position,
+      site_id: site_id ?? null,
       pin_hash: await hashPin(pinCheck.pin)
     };
   }

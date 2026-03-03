@@ -31,15 +31,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Both signatures are required' }, { status: 400 });
   }
 
-  const { data: courier } = await supabase
+  const { data: courierRaw } = await supabase
     .from('profiles')
-    .select('*')
+    .select('*, site_definition:site_definitions(name)')
     .eq('id', courierId)
     .eq('active', true)
     .single();
-  if (!courier || courier.role !== 'COURIER') {
+  if (!courierRaw || courierRaw.role !== 'COURIER') {
     return NextResponse.json({ message: 'Invalid courier' }, { status: 400 });
   }
+  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
+    Array.isArray(value) ? value[0] ?? null : value ?? null;
+  const courier = {
+    ...courierRaw,
+    site_definition: pickFirst((courierRaw as { site_definition?: unknown }).site_definition) as
+      | { name?: string | null }
+      | null
+      | undefined
+  };
   const validPin = await verifyPin(pin, courier.pin_hash);
   if (!validPin) {
     return NextResponse.json({ message: 'Invalid PIN' }, { status: 401 });
@@ -205,7 +214,7 @@ export async function POST(req: NextRequest) {
     month: '2-digit',
     day: '2-digit'
   }).format(now);
-  const location = process.env.HANDOVER_PDF_LOCATION || '—';
+  const location = courier.site_definition?.name || courier.site || process.env.HANDOVER_PDF_LOCATION || '—';
 
   try {
     const pdfBytes = await generateHandoverPdf({

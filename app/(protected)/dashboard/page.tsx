@@ -1,108 +1,103 @@
+import { getSessionProfile } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getSessionProfile } from '@/lib/auth';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { format } from 'date-fns';
-
-type DeviceSummary = {
-  total: number;
-  status: Record<string, number>;
-  type: Record<string, number>;
-};
-
-const deviceTypes = ['PDA', 'MOBILE_PRINTER'] as const;
+import { DeviceDashboardPage } from '@/components/dashboard/DeviceDashboardPage';
+import type { DeviceTypeCount, HandoverDaily, RecentHandover, Totals } from '@/components/dashboard/mockData';
 
 export default async function DashboardPage() {
   await getSessionProfile(['ADMIN']);
   const supabase = supabaseAdmin ?? getSupabaseServerClient();
 
-  const [{ data: devices }, { data: handoverLogs }] = await Promise.all([
-    supabase.from('devices').select('id, status, type'),
+  const now = new Date();
+  const days = 21;
+  const start = new Date(now);
+  start.setDate(start.getDate() - (days - 1));
+  start.setHours(0, 0, 0, 0);
+  const startIso = start.toISOString();
+
+  const formatLocalDate = (value: Date) => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [{ data: devices }, { data: recentLogs }, { data: issuedLogs }] = await Promise.all([
+    supabase
+      .from('devices')
+      .select('status, type, device_type:device_type_definitions(name)'),
     supabase
       .from('handover_logs')
-      .select('id, action_type, timestamp, device:devices!handover_logs_device_id_fkey(id, asset_tag)')
+      .select('device_id, action_type, timestamp, device:devices(asset_tag)')
       .order('timestamp', { ascending: false })
-      .limit(10)
+      .limit(8),
+    supabase
+      .from('handover_logs')
+      .select('timestamp, action_type')
+      .gte('timestamp', startIso)
+      .eq('action_type', 'ISSUE')
   ]);
 
-  const summary = (devices ?? []).reduce<DeviceSummary>(
-    (acc, device) => {
-      acc.total += 1;
-      acc.status[device.status] = (acc.status[device.status] || 0) + 1;
-      acc.type[device.type] = (acc.type[device.type] || 0) + 1;
-      return acc;
-    },
-    { total: 0, status: {}, type: {} }
-  );
+  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
+    Array.isArray(value) ? value[0] ?? null : value ?? null;
 
-  const recentHandovers = (handoverLogs ?? []).map((log) => {
+  const totals: Totals = {
+    totalDevices: devices?.length ?? 0,
+    available: 0,
+    issued: 0,
+    brokenLost: 0,
+    inService: 0
+  };
+
+  const typeCounts = new Map<string, number>();
+  (devices ?? []).forEach((device) => {
+    totals.totalDevices += 0;
+    const status = device.status;
+    if (status === 'AVAILABLE') totals.available += 1;
+    if (status === 'ISSUED') totals.issued += 1;
+    if (status === 'BROKEN' || status === 'LOST') totals.brokenLost += 1;
+    if (status === 'IN_SERVICE') totals.inService += 1;
+
+    const rawType = (device as { device_type?: unknown }).device_type;
+    const deviceType = pickFirst(rawType) as { name?: string | null } | null;
+    const key = deviceType?.name || device.type || 'Unknown';
+    typeCounts.set(key, (typeCounts.get(key) ?? 0) + 1);
+  });
+
+  const deviceTypes: DeviceTypeCount[] = Array.from(typeCounts.entries()).map(([type, count]) => ({
+    type,
+    count
+  }));
+
+  const countsByDate = new Map<string, number>();
+  (issuedLogs ?? []).forEach((log) => {
+    const dateKey = formatLocalDate(new Date(log.timestamp));
+    countsByDate.set(dateKey, (countsByDate.get(dateKey) ?? 0) + 1);
+  });
+
+  const handoversDaily: HandoverDaily[] = Array.from({ length: days }).map((_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const key = formatLocalDate(date);
+    return { date: key, issuedCount: countsByDate.get(key) ?? 0 };
+  });
+
+  const recentHandovers: RecentHandover[] = (recentLogs ?? []).map((log) => {
     const rawDevice = (log as { device?: unknown }).device;
-    const device = (Array.isArray(rawDevice) ? rawDevice[0] : rawDevice) as
-      | { asset_tag?: string | null }
-      | null
-      | undefined;
-
+    const device = pickFirst(rawDevice) as { asset_tag?: string | null } | null;
     return {
-      id: log.id,
-      action: log.action_type,
+      deviceId: device?.asset_tag ?? log.device_id,
       timestamp: log.timestamp,
-      assetTag: device?.asset_tag ?? 'Ismeretlen eszköz'
+      action: log.action_type
     };
   });
 
-  const formatTimestamp = (value: string) => format(new Date(value), 'yyyy.MM.dd HH:mm');
-
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-5">
-        <Stat title="Total devices" value={summary.total} />
-        <Stat title="Available" value={summary.status['AVAILABLE'] ?? 0} />
-        <Stat title="Issued" value={summary.status['ISSUED'] ?? 0} />
-        <Stat title="Broken / Lost" value={(summary.status['BROKEN'] ?? 0) + (summary.status['LOST'] ?? 0)} />
-        <Stat title="In service" value={summary.status['IN_SERVICE'] ?? 0} />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded bg-white p-4 shadow">
-          <h2 className="text-lg font-semibold text-primary">By device type</h2>
-          <ul className="mt-3 space-y-2">
-            {deviceTypes.map((type) => (
-              <li key={type} className="flex items-center justify-between border-b pb-2 last:border-none last:pb-0">
-                <span>{type}</span>
-                <span className="font-semibold">{summary.type[type] ?? 0}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="rounded bg-white p-4 shadow">
-          <h2 className="text-lg font-semibold text-primary">Recent handovers</h2>
-          {recentHandovers.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-500">No handovers recorded yet.</p>
-          ) : (
-            <ul className="mt-3 space-y-3">
-              {recentHandovers.map((log) => (
-                <li key={log.id} className="flex items-center justify-between rounded border px-3 py-2">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{log.assetTag}</p>
-                    <p className="text-xs text-gray-500">{formatTimestamp(log.timestamp)}</p>
-                  </div>
-                  <StatusBadge value={log.action} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ title, value }: { title: string; value: number }) {
-  return (
-    <div className="rounded bg-white p-4 text-center shadow">
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="mt-2 text-3xl font-bold text-primary">{value}</p>
-    </div>
+    <DeviceDashboardPage
+      totals={totals}
+      deviceTypes={deviceTypes}
+      handoversDaily={handoversDaily}
+      recentHandovers={recentHandovers}
+    />
   );
 }

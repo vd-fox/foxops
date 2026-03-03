@@ -10,7 +10,7 @@ export default async function DevicesPage() {
     supabase
       .from('devices')
       .select(
-        'id, asset_tag, type, status, description, current_holder_id, profiles!devices_current_holder_id_fkey(full_name)'
+        'id, asset_tag, type, status, description, current_holder_id, profiles!devices_current_holder_id_fkey(full_name), device_type_definition:device_type_definitions(name)'
       )
       .order('asset_tag'),
     supabase.from('device_type_definitions').select('*').order('name'),
@@ -23,7 +23,10 @@ export default async function DevicesPage() {
   const normalizedDevices =
     devices?.map((device) => ({
       ...device,
-      profiles: pickFirst((device as { profiles?: unknown }).profiles) as { full_name: string | null } | null
+      profiles: pickFirst((device as { profiles?: unknown }).profiles) as { full_name: string | null } | null,
+      device_type_definition: pickFirst(
+        (device as { device_type_definition?: unknown }).device_type_definition
+      ) as { name: string | null } | null
     })) ?? [];
 
   return (

@@ -17,6 +17,8 @@ export type Database = {
           role: 'ADMIN' | 'DISPATCHER' | 'COURIER';
           courier_type: 'CONTRACTOR' | 'EMPLOYEE' | null;
           pin_hash: string | null;
+          site: string | null;
+          site_id: string | null;
           company_name: string | null;
           vat_number: string | null;
           company_number: string | null;
@@ -41,6 +43,8 @@ export type Database = {
           role: 'ADMIN' | 'DISPATCHER' | 'COURIER';
           courier_type?: 'CONTRACTOR' | 'EMPLOYEE' | null;
           pin_hash?: string | null;
+          site?: string | null;
+          site_id?: string | null;
           company_name?: string | null;
           vat_number?: string | null;
           company_number?: string | null;
@@ -64,6 +68,8 @@ export type Database = {
           role?: 'ADMIN' | 'DISPATCHER' | 'COURIER';
           courier_type?: 'CONTRACTOR' | 'EMPLOYEE' | null;
           pin_hash?: string | null;
+          site?: string | null;
+          site_id?: string | null;
           company_name?: string | null;
           vat_number?: string | null;
           company_number?: string | null;
@@ -86,8 +92,30 @@ export type Database = {
             columns: ['id'];
             referencedRelation: 'users';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'profiles_site_id_fkey';
+            columns: ['site_id'];
+            referencedRelation: 'site_definitions';
+            referencedColumns: ['id'];
           }
         ];
+      };
+      site_definitions: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+        };
+        Relationships: [];
       };
       devices: {
         Row: {

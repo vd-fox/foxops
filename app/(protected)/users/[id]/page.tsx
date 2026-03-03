@@ -41,7 +41,11 @@ export default async function UserDetailPage({ params }: Props) {
   await getSessionProfile(['ADMIN']);
   const supabase = supabaseAdmin ?? getSupabaseServerClient();
 
-  const { data: user } = await supabase.from('profiles').select('*').eq('id', params.id).single<Profile>();
+  const { data: user } = await supabase
+    .from('profiles')
+    .select('*, site_definition:site_definitions(name)')
+    .eq('id', params.id)
+    .single<Profile>();
   if (!user) {
     notFound();
   }
@@ -126,6 +130,91 @@ export default async function UserDetailPage({ params }: Props) {
           ← Back to users
         </Link>
       </div>
+
+      <section className="rounded bg-white p-4 shadow">
+        <h2 className="text-lg font-semibold text-primary">User details</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 text-sm">
+          <div>
+            <p className="text-xs uppercase text-gray-500">Role</p>
+            <p className="font-semibold">{user.role}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase text-gray-500">Courier type</p>
+            <p className="font-semibold">{user.courier_type ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase text-gray-500">Site</p>
+            <p className="font-semibold">
+              {(() => {
+                const rawSite = (user as { site_definition?: unknown }).site_definition;
+                const site = Array.isArray(rawSite) ? rawSite[0] : rawSite;
+                const siteName = (site as { name?: string } | null | undefined)?.name;
+                return siteName || user.site || '—';
+              })()}
+            </p>
+          </div>
+
+          {user.courier_type === 'CONTRACTOR' && (
+            <>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Company name</p>
+                <p className="font-semibold">{user.company_name ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">VAT number</p>
+                <p className="font-semibold">{user.vat_number ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Company number</p>
+                <p className="font-semibold">{user.company_number ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Representative name</p>
+                <p className="font-semibold">
+                  {[user.representative_first_name, user.representative_last_name].filter(Boolean).join(' ') || '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Representative email</p>
+                <p className="font-semibold">{user.representative_email ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Representative phone</p>
+                <p className="font-semibold">{user.representative_phone ?? '—'}</p>
+              </div>
+            </>
+          )}
+
+          {user.courier_type === 'EMPLOYEE' && (
+            <>
+              <div>
+                <p className="text-xs uppercase text-gray-500">First name</p>
+                <p className="font-semibold">{user.first_name ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Last name</p>
+                <p className="font-semibold">{user.last_name ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Email address</p>
+                <p className="font-semibold">{user.employee_email ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Phone number</p>
+                <p className="font-semibold">{user.employee_phone ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Employee ID</p>
+                <p className="font-semibold">{user.employee_id ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-gray-500">Position</p>
+                <p className="font-semibold">{user.position ?? '—'}</p>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       <section className="rounded bg-white p-4 shadow">
         <h2 className="text-lg font-semibold text-primary">Current devices ({currentDevices?.length ?? 0})</h2>

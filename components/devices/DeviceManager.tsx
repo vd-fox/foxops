@@ -17,6 +17,7 @@ const types: Database['public']['Tables']['devices']['Row']['type'][] = ['PDA', 
 
 type DeviceRow = Pick<Database['public']['Tables']['devices']['Row'], 'id' | 'asset_tag' | 'type' | 'status'> & {
   profiles?: { full_name: string | null } | null;
+  device_type_definition?: { name: string | null } | null;
 };
 
 type DeviceTypeDefinition = Database['public']['Tables']['device_type_definitions']['Row'];
@@ -75,6 +76,34 @@ export function DeviceManager({
       return matchesQuery && matchesStatus && matchesType;
     });
   }, [devices, query, statusFilter, typeFilter]);
+
+  const formatCategory = (value: DeviceRow['type']) => (value === 'MOBILE_PRINTER' ? 'Mobile printer' : 'PDA');
+
+  const escapeCsv = (value: string) => {
+    if (value.includes('"') || value.includes(',') || value.includes('\n')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  };
+
+  const exportCsv = () => {
+    const headers = ['Asset tag', 'Category', 'Device type', 'Status', 'Holder'];
+    const rows = filtered.map((device) => [
+      device.asset_tag,
+      formatCategory(device.type),
+      device.device_type_definition?.name ?? '',
+      device.status,
+      device.profiles?.full_name ?? ''
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map((cell) => escapeCsv(String(cell ?? ''))).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `devices-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   const createDevice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +171,13 @@ export function DeviceManager({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="rounded border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
+          >
+            Export CSV
+          </button>
           <select
             className="rounded border border-gray-300 p-2"
             value={statusFilter}
