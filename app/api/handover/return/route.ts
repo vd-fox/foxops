@@ -170,8 +170,6 @@ export async function POST(req: NextRequest) {
     .from('device_flag_values')
     .select('device_id, value, note, definition:device_flag_definitions(name)')
     .in('device_id', deviceIds);
-  const pickFirst = <T,>(value: T[] | T | null | undefined): T | null =>
-    Array.isArray(value) ? value[0] ?? null : value ?? null;
   const flagValuesByDevice = new Map<string, { name: string; value: boolean; note: string | null }[]>();
   (finalFlagValues ?? []).forEach((row) => {
     if (!row.device_id) return;
